@@ -78,7 +78,22 @@ def tobs():
     return jsonify(all_tobs)
 
 
+@app.route('<start>')
+@app.route('<start>/<end>')
+def dateinput(start, end=None):
+    if end == None:
+        end = session.query(Measurement.date).order_by(
+            Measurement.date.describe()).first()[0]
+        # Session.bind doesnt work below. Find a different way to specify dates?
+        tobs = session.query(Measurement.tobs).filter(Measurement.date >= start, Measurement.date <= end).statement, session.bind)
+
+        tobs_dictionary2={}
+        tobs_dictionary2["TMIN"]=tobs.describe().loc[tobs.describe().index='min']['tobs'][0]
+        tobs_dictionary2["TAVG"]=tobs.describe().loc[tobs.describe().index='mean']['tobs'][0]
+        tobs_dictionary2["TMAX"]=tobs.describe().loc[tobs.describe().index='mean']['tobs'][0]
+
+        return jsonify(tobs_dictionary2)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug = True)
