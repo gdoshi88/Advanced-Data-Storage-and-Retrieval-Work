@@ -31,8 +31,10 @@ def Home():
         "/api/v1.0/precipitation<br />"
         "/api/v1.0/stations<br />"
         "/api/v1.0/tobs<br />"
-        "/api/v1.0/<start><br />"
-        "/api/v1.0/<start>/<end><br />"
+        "ADD YOUR DESIRED DATE BELOW IN THIS FORMAT: YYYY-MM-DD. Prints minimum tobs, average tobs, max tobs in that order.<br />"
+        "/api/v1.0/<date><br />"
+        "ADD YOUR DESIRED START DATE AND END DATE BELOW IN THIS FORMAT: YYYY-MM-DD/YYYY-MM-DD. Prints minimum tobs, average tobs, max tobs in that order.<br />"
+        "/api/v1.0/<startdate>/<enddate><br />"
     )
 
 
@@ -82,22 +84,42 @@ def tobs():
 def date_given(date):
     date_results = session.query(Measurement.date, func.min(Measurement.tobs), func.avg(
         Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date == date).all()
+
     return jsonify(date_results)
 
-# @app.route('<start>/<end>')
-# def dateinput(start, end=None):
-#     if end == None:
-#         end = session.query(Measurement.date).order_by(
-#             Measurement.date.describe()).first()[0]
-#         # Session.bind doesnt work below. Find a different way to specify dates?
-#         tobs = session.query(Measurement.tobs).filter(Measurement.date >= start, Measurement.date <= end).statement, session.bind)
 
-#         tobs_dictionary2={}
-#         tobs_dictionary2["TMIN"]=tobs.describe().loc[tobs.describe().index = 'min']['tobs'][0]
-#         tobs_dictionary2["TAVG"]=tobs.describe().loc[tobs.describe().index = 'mean']['tobs'][0]
-#         tobs_dictionary2["TMAX"]=tobs.describe().loc[tobs.describe().index = 'mean']['tobs'][0]
+# @app.route('/api/v1.0/<startdate>/<enddate>')
+# def dateinput(startdate, enddate):
+#     date_input_results = session.query(Measurement.date, Measurement.tobs).filter(
+#         Measurement.date >= startdate, Measurement.date <= enddate).all()
 
-#         return jsonify(tobs_dictionary2)
+#     start_end_date_input = []
+#     for result in date_input_results:
+#         input_dictionary = {}
+#         input_dictionary['tobs'] = func.min(result.tobs)
+#         input_dictionary['tobs'] = func.max(result.tobs)
+#         input_dictionary['tobs'] = func.avg(result.tobs)
+#         start_end_date_input.append(input_dictionary)
+
+#     return jsonify(start_end_date_input)
+
+@app.route('/api/v1.0/<startdate>/<enddate>')
+def dateinput(startdate, enddate):
+    temp_sel = [func.min(Measurement.tobs),
+                func.avg(Measurement.tobs),
+                func.max(Measurement.tobs)]
+    date_input_results = session.query(
+        *temp_sel).filter(Measurement.date >= startdate, Measurement.date <= enddate).all()
+
+    start_end_date_input = []
+    for tmin, tavg, tmax in date_input_results:
+        input_dictionary = {}
+        input_dictionary['min'] = tmin
+        input_dictionary['avg'] = tavg
+        input_dictionary['max'] = tmax
+        start_end_date_input.append(input_dictionary)
+
+    return jsonify(start_end_date_input)
 
 
 if __name__ == "__main__":
